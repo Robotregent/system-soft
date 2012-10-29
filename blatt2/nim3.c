@@ -77,7 +77,7 @@ void bot(int game[]){
         game[2]--;
 }
 int main (void){
-    int game[3], turn, i, j, counter=1;
+    int game[3], turn, counter=1;
     turn = init(game);
     while (gameCount(game)>0){
         printf("Runde: %d\n",counter);
@@ -91,6 +91,12 @@ int main (void){
         printf("--------\n");
         turn = !turn;
         counter++;
+    }
+    if (turn){
+        printf("Bot hat gewonnen :(\n");
+    }
+    else{
+        printf("Glückwunsch, Du hast gewonnen!\n");
     }
     return 0;
 }
