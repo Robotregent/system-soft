@@ -1,7 +1,27 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include  <stdbool.h>
 /* Helfer */
+bool even(int game[]){
+    int i, j;
+    int value[]={0,0,0,0};
+    bool res = true;
+    for(i = 0; i < 3; i++) {
+        for(j = 0; j < 4; j++) {
+            if(game[i] & (1 << j)) {
+                value[j] += 1;
+            }        
+        }
+    }
+    for (i=0;i<4;i++){
+        if (value[i] % 2 != 0){
+            res = false;
+            break;
+        }
+    }
+    return res;
+}
 void printGame(int game[]){
     int i, j;
     for(i=0; i<3; i++){
@@ -67,14 +87,47 @@ void human(int game[]){
     game[h-1]=game[h-1] - s;
 }
 /* Bot einlesen */
+void botuneven(int game[]){
+    int i, j, old;
+    bool iseven;
+    for (i=0;i<3;i++){
+        if (game[i]>0){
+            old=game[i];
+            iseven = false;
+            for (j=0;j<3;j++){
+                game[i]--;
+                iseven =  even(game);
+                if(iseven){
+                    return; // Ausstieg, wenn Gewinnbedingung erreicht
+                }
+            }
+            game[i]=old;
+        }
+    }
+    //Wenn Gewinnbedingugn nicht erreicht werden kann, nur eins abziehen
+    for (i=0;i<3;i++){
+        if (game[i]>0){
+            game[i]--;
+            break;
+        }
+    }
+}
+void boteven(int game[]){
+    int i;
+    for (i=0;i<3;i++){
+        if (game[i]>0){
+            game[i]--;
+            break;
+        }
+    }
+}
 void bot(int game[]){
-    //i = rand() % 3;
-    if (game[0] > 0)
-        game[0]--;
-    else if (game[1]>0)
-        game[1]--;
-    else if (game[2]>0)
-        game[2]--;
+    if ( even(game)){
+        boteven(game);
+    }
+    else{
+        botuneven(game);
+    }
 }
 int main (void){
     int game[3], turn, counter=1;
