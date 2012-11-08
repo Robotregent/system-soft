@@ -7,3 +7,7 @@ Einführung in die shell und c.
 Blatt 2
 -------
 Nim-Spiel mit drei Haufen
+
+Blatt 3
+-------
+C - Präprozessor, Zahlendarstellung und Bitoperationen.
