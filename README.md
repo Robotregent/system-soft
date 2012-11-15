@@ -11,3 +11,7 @@ Nim-Spiel mit drei Haufen
 Blatt 3
 -------
 C - Präprozessor, Zahlendarstellung und Bitoperationen.
+
+Blatt 4
+-------
+Vigenère cipher und knacken einer Vigenère cipher
