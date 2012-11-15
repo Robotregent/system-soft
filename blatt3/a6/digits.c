@@ -5,8 +5,10 @@ int main(void){
     unsigned int a=-1;
     do{
         printf("a: ");
-        if (scanf("%u",&a)!=1)
+        if (scanf("%u",&a)!=1){
+            printf("NaN\n");
             exit(2);
+        }
     }while(a<0);
     
     int firstOne = 0;
