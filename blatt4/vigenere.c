@@ -19,7 +19,7 @@ void decrypt(char* text, const char* key){
 }
 void readLine(char* text){
     int c, i=0;
-    while((c = getchar())!=EOF && i<PSIZE-1){
+    while((c = getchar())!=EOF && i<PSIZE-1 ){
         if (c > 64 && c < 91){
             text[i]=(char) c;
             i++;
@@ -27,10 +27,12 @@ void readLine(char* text){
     }
     text[i]='\0';
 }
+/*
 int main(void){
     char key[PSIZE], plain[PSIZE];
     printf("Please enter key:\n");
     readLine(key);
+ 
     printf("Please enter plaintext:\n ");
     readLine(plain);
     printf("\n");
@@ -44,3 +46,4 @@ int main(void){
     
     return 0;
 }
+*/
