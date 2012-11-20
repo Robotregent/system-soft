@@ -3,26 +3,45 @@
 #include <stdio.h>
 #include <string.h>
 #include <math.h>
-#define FREQSIZE 26
+#define PSIZE 26
 #define SHANNON_MEAN 4.08
-#ifndef PSIZE
-#define PSIZE 5120
-#endif
+#define TEXTSIZE 5121 //5KB + '\0'
+/**
+ * Annahme: Alle Felder ausreichend (TEXTSIZE) groß
+ **/ 
+enum vigenere_type { encryption = 1, decryption = -1 };
+void vigenere(char* text, const char* key, enum vigenere_type flag){
+    int keyCount=0 ;
+    while(*text!= '\0'){
+        *text =(((*text -65) + ( (key[keyCount++]-65) * flag) + 26) % 26) + 65;
+        text++;
+        if(key[keyCount]=='\0')
+            keyCount=0;
+    }
+}
+void encrypt(char* text, const char* key){
+    vigenere(text,key, encryption);
+}
+void decrypt(char* text, const char* key){
+    vigenere(text,key, decryption);
+}
+void readLine(char* text){
+    int c, i=0;
+    while((c = getchar())!=EOF && i<TEXTSIZE-1 ){
+        if (c > 64 && c < 91){
+            text[i++]=(char) c;
+        }
+    }
+    text[i]='\0';
+}
 void clear_p(double* p){
     int i;
-    for (i=0;i<FREQSIZE;i++){
+    for (i=0;i<PSIZE;i++){
         p[i]=0;
     }
 }
-void print_p(double p[]){
-    int i;
-    for (i=0;i<FREQSIZE;i++){
-        printf("%e ",p[i]);
-    }
-    printf("\n");
-}
 /**
- * Annahme: p[FREQSIZE] und mit 0 initialisiert
+ * Annahme: p[PSIZE] und mit 0 initialisiert
  * */
 void freq_analysis(double p[], const char* t, int strlen_t, int shift, int offset){
     int i, n;
@@ -30,14 +49,14 @@ void freq_analysis(double p[], const char* t, int strlen_t, int shift, int offse
         p[t[i]-65]++;
     }
 	n = (i - offset) / shift;
-    for (i=0; i<FREQSIZE; i++){
+    for (i=0; i<PSIZE; i++){
 		p[i] /= n;
     }
 }
 double shannon_entropy(double p[]){
     double res=0.0;
     int i;
-    for (i=0; i<FREQSIZE; i++){
+    for (i=0; i<PSIZE; i++){
         if (p[i]!=0){
             res += p[i] * (log(p[i]) / log(2));
         }
@@ -46,21 +65,21 @@ double shannon_entropy(double p[]){
 }
 int key_length(const char* cipher){
     double shannon;
-    double p[FREQSIZE];
+    double p[PSIZE];
     int i=0, len = strlen(cipher);
     do{
         i++;
         clear_p(p);
         freq_analysis(p,cipher,len,i,0);
         shannon = shannon_entropy(p);
-    }while(((shannon - SHANNON_MEAN)>0.1) && (i<PSIZE) && (shannon > SHANNON_MEAN));
+    }while(((shannon - SHANNON_MEAN)>0.1) && (i<TEXTSIZE) && (shannon > SHANNON_MEAN));
 
     return i;
 }
 
 char encrypted_E(double p[]){
 	int i,m=0;
-	for (i=0; i<FREQSIZE;i++){
+	for (i=0; i<PSIZE;i++){
 		if (p[i]>p[m])
 			m=i;
 	}
@@ -69,7 +88,7 @@ char encrypted_E(double p[]){
 
 void find_key(char cipher[], char key[]){
 	int i, k, l;
-	double p[FREQSIZE];
+	double p[PSIZE];
 	l=strlen(cipher);
 	k = key_length(cipher);
 	for (i = 0; i < k; i++){
@@ -83,14 +102,14 @@ void find_key(char cipher[], char key[]){
 
 
 int main(void){
-	char cipher[PSIZE], key[PSIZE], plain[PSIZE];
+	char cipher[TEXTSIZE], key[TEXTSIZE], plain[TEXTSIZE];
 
     printf("Please enter ciphertext:\n");
     readLine(cipher);
     printf("\n");
 
 	find_key(cipher,key);
-	strncpy(plain,cipher,PSIZE);
+	strncpy(plain,cipher,TEXTSIZE);
 	decrypt(plain,key);
 
 	printf("Key: \t\t%s\n",key);
