@@ -40,10 +40,10 @@ int main(void){
     printf("\n");
 
     encrypt(plain, key);
-    printf("Ciphertext:\t");                
+    printf("Ciphertext:\t");
     printf("%s\n",plain);
     decrypt(plain, key);
-    printf("Plaintext:\t");                
+    printf("Plaintext:\t");
     printf("%s\n",plain);
     
     return 0;

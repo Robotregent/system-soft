@@ -48,9 +48,9 @@ void freq_analysis(double p[], const char* t, int strlen_t, int shift, int offse
     for (i=0+offset; i<strlen_t; i+=shift){
         p[t[i]-65]++;
     }
-	n = (i - offset) / shift;
+    n = (i - offset) / shift;
     for (i=0; i<PSIZE; i++){
-		p[i] /= n;
+        p[i] /= n;
     }
 }
 double shannon_entropy(double p[]){
@@ -78,42 +78,42 @@ int key_length(const char* cipher){
 }
 
 char encrypted_E(double p[]){
-	int i,m=0;
-	for (i=0; i<PSIZE;i++){
-		if (p[i]>p[m])
-			m=i;
-	}
-	return 'A' + m ;
+    int i,m=0;
+    for (i=0; i<PSIZE;i++){
+        if (p[i]>p[m])
+            m=i;
+    }
+    return 'A' + m ;
 }
 
 void find_key(char cipher[], char key[]){
-	int i, k, l;
-	double p[PSIZE];
-	l=strlen(cipher);
-	k = key_length(cipher);
-	for (i = 0; i < k; i++){
-		clear_p(p);
-		freq_analysis(p,cipher,l,k,i);
-		key[i] = (((encrypted_E(p) - 'A') - 4 + 26) % 26) + 'A';
-	}
-	key[i]='\0';
+    int i, k, l;
+    double p[PSIZE];
+    l=strlen(cipher);
+    k = key_length(cipher);
+    for (i = 0; i < k; i++){
+        clear_p(p);
+        freq_analysis(p,cipher,l,k,i);
+        key[i] = (((encrypted_E(p) - 'A') - 4 + 26) % 26) + 'A';
+    }
+    key[i]='\0';
 }
 
 
 
 int main(void){
-	char cipher[TEXTSIZE], key[TEXTSIZE], plain[TEXTSIZE];
+    char cipher[TEXTSIZE], key[TEXTSIZE], plain[TEXTSIZE];
 
     printf("Please enter ciphertext:\n");
     readLine(cipher);
     printf("\n");
 
-	find_key(cipher,key);
-	strncpy(plain,cipher,TEXTSIZE);
-	decrypt(plain,key);
+    find_key(cipher,key);
+    strncpy(plain,cipher,TEXTSIZE);
+    decrypt(plain,key);
 
-	printf("Key: \t\t%s\n",key);
-	printf("Plaintext: \t%s\n",plain);
+    printf("Key: \t\t%s\n",key);
+    printf("Plaintext: \t%s\n",plain);
 
     return 0;
 }
