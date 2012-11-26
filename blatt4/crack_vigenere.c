@@ -25,12 +25,13 @@ void print_p(double p[]){
  * Annahme: p[FREQSIZE] und mit 0 initialisiert
  * */
 void freq_analysis(double p[], const char* t, int strlen_t, int shift, int offset){
-    int i;
+    int i, n;
     for (i=0+offset; i<strlen_t; i+=shift){
         p[t[i]-65]++;
     }
+	n = (i - offset) / shift;
     for (i=0; i<FREQSIZE; i++){
-        p[i] /= strlen_t;
+		p[i] /= n;
     }
 }
 double shannon_entropy(double p[]){
@@ -53,8 +54,6 @@ int key_length(const char* cipher){
         freq_analysis(p,cipher,len,i,0);
         shannon = shannon_entropy(p);
     }while(((shannon - SHANNON_MEAN)>0.1) && (i<PSIZE) && (shannon > SHANNON_MEAN));
-
-    printf("Entropie: %e, Delta: %e ",shannon, (shannon - SHANNON_MEAN));
 
     return i;
 }
