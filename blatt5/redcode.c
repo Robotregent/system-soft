@@ -187,7 +187,7 @@ opcode evaluate_instuktion(int pc, instruction memory[]){
     opcode result = memory[pc].opc;
     switch (result){
         case DAT:
-            //dat(pc,memory);
+            dat(pc,memory);
             // verloren!!!
             break;
         case MOV:
@@ -250,7 +250,12 @@ int read_instructions(FILE* file, instruction player[], int pc){
  * Die Programme sollen zu Begin mindestens 300 Instruktionen weit ausseinander liegen
  **/
 void init_memory(int *pc_one, int *pc_two, FILE* file1, FILE* file2, instruction *memory){
-    int end_player_one, end_player_two;
+    int end_player_one, end_player_two, i;
+    instruction empty = {DAT, invalid_address_mode, 0, immediate, 0};
+
+    for (i=0; i < MEM_SIZE; i++){
+        memory[i]=empty;
+    }
 
     srand(time(0));
     *pc_one = rand() % MEM_SIZE;
@@ -278,10 +283,20 @@ int main(int argc, char** argv){
         return -1;
     }
     int pc_one, pc_two;
+    opcode current_opc_one, current_opc_two;
     instruction memory[MEM_SIZE];
 
     init_memory(&pc_one, &pc_two, file1, file2, memory);
 
+    //Eventloop
+    do{
+        current_opc_one = evaluate_instuktion(pc_one,memory);
+        pc_one++;
+
+        current_opc_two = evaluate_instuktion(pc_two,memory);
+        pc_two++;
+
+    } while (current_opc_one && current_opc_two);
     fclose(file1);
     fclose(file2);
     return 0;
