@@ -23,107 +23,158 @@ int _mod(int i){
 }
 
 
-address_mode setValue(int pc, instruction memory[], address_mode mode, int address_value, int value){
-    address_mode result = mode;
+int get_instuction_ptr_a(int pc, instruction memory[]){
+    address_mode mode =  memory[pc].a_add_mod;
+    int result, value = memory[pc].a_value;
+
     switch (mode) {
-    case immediate:
-        memory[pc].b_value = value;
-        break;
-    case direct:
-        memory[_mod(pc + address_value)].b_value = value;
-        break;
-    case indirect:
-        memory[_mod(pc + address_value + memory[_mod(pc + address_value)].b_value)].b_value = value;
-        break;
-    case decrement:
-        if (memory[pc].b_add_mod == decrement){
-            memory[_mod(pc + address_value)].b_value = _mod(memory[_mod(pc + address_value)].b_value - 1);
-            memory[_mod(pc + address_value + memory[_mod(pc + address_value)].b_value)].b_value = value;
+        case immediate:
+            printf("Addressing of immediate is undefined\n");
+            result = (int) invalid_address_mode;
+            break;
+        case direct:
+            result = _mod(pc + value);
+            break;
+        case indirect:
+            result = _mod(pc + value + memory[_mod(pc + value)].a_value);
+            break;
+        case decrement:
+            memory[_mod(pc + value)].a_value = _mod(memory[_mod(pc + value)].a_value - 1);
+            result = _mod(memory[_mod(pc + value + memory[_mod(pc + value)].a_value)].a_value);
+            break;
+        default:
+            result = (int) invalid_address_mode;
+            break;
         }
-        else {
-            memory[_mod(pc + address_value)].a_value = _mod(memory[_mod(pc + address_value)].a_value - 1);
-            memory[_mod(pc + address_value + memory[_mod(pc + address_value)].a_value)].a_value = value;
-        }
-        break;
-    default:
-        result = invalid_address_mode;
-        break;
-    }
-    return result;
-}
-int getValue(int pc, instruction memory[], address_mode mode, int value){
-    int result;
-    switch (mode) {
-    case immediate:
-        result = value;
-        break;
-    case direct:
-        result = memory[_mod(pc + value)].b_value;
-        break;
-    case indirect:
-        result = memory[_mod(pc + value + memory[_mod(pc + value)].b_value)].b_value;
-        break;
-    case decrement:
-        if (memory[pc].b_add_mod == decrement){
-           memory[_mod(pc + value)].b_value = _mod(memory[_mod(pc + value)].b_value - 1);
-           result = memory[_mod(pc + value + memory[_mod(pc + value)].b_value)].b_value;
-        }
-        else{
-           memory[_mod(pc + value)].a_value = _mod(memory[_mod(pc + value)].a_value - 1);
-           result = memory[_mod(pc + value + memory[_mod(pc + value)].a_value)].a_value;
-        }
-        break;
-    default:
-        result = (int) invalid_address_mode;
-        break;
-    }
     return result;
 }
 
+int get_instuction_ptr_b(int pc, instruction memory[]){
+    address_mode mode =  memory[pc].b_add_mod;
+    int result, value = memory[pc].b_value;
+    switch (mode) {
+        case immediate:
+            printf("Addressing of immediate is undefined\n");
+            result = (int) invalid_address_mode;
+            break;
+        case direct:
+            result = _mod(pc + value);
+            break;
+        case indirect:
+            result = _mod(pc + value + memory[_mod(pc + value)].b_value);
+            break;
+        case decrement:
+            memory[_mod(pc + value)].b_value = _mod(memory[_mod(pc + value)].b_value - 1);
+            result = _mod(memory[_mod(pc + value + memory[_mod(pc + value)].b_value)].b_value);
+            break;
+        default:
+            result = (int) invalid_address_mode;
+            break;
+        }
+    return result;
+}
+
+//Setzt a_value
+address_mode set_a_value(int pc, instruction memory[], int value){
+    if (memory[pc].a_add_mod!=immediate){
+        int at = get_instuction_ptr_a(pc,memory);
+        memory[at].a_value = _mod(value);
+    }
+    else{
+        memory[pc].a_value = _mod(value);
+    }
+    return memory[pc].a_add_mod;
+}
+//Setzte  b_value
+address_mode set_b_value(int pc, instruction memory[], int value){
+    if (memory[pc].b_add_mod!=immediate){
+        int at = get_instuction_ptr_b(pc,memory);
+        memory[at].b_value = _mod(value);
+    }
+    else{
+        memory[pc].b_value = _mod(value);
+    }
+    return memory[pc].b_add_mod;
+}
+
+// Hole a_value
+int get_a_value(int pc, instruction memory[]){
+    int result;
+    if (memory[pc].a_add_mod!=immediate){
+        int at = get_instuction_ptr_a(pc,memory);
+        result = memory[at].a_value;
+    }
+    else{
+        result = memory[pc].a_value;;
+    }
+    return _mod(result);
+}
+// Hole b_value
+int get_b_value(int pc, instruction memory[]){
+    int result;
+    if (memory[pc].b_add_mod!=immediate){
+        int at = get_instuction_ptr_b(pc,memory);
+        result = memory[at].b_value;
+    }
+    else{
+        result = memory[pc].b_value;;
+    }
+    return _mod(result);
+}
+
+
 void dat(int pc, instruction memory[]){
-    setValue(pc, memory, immediate, 0, _mod(memory[pc].b_value));
+    set_b_value(pc, memory, 0);
     printf("DAT #%d an Stelle: %d\n",memory[pc].b_value, pc);
 }
 
 void mov(int pc, instruction memory[]){
     int from , to;
-    from = getValue(pc, memory, memory[pc].a_add_mod,memory[pc].a_value);
-    to = getValue(pc, memory, memory[pc].b_add_mod,memory[pc].b_value);
-
-    memory[to] = memory[from];
-
-    printf("MOV von %d nach %d\n",from, to);
+    to = get_instuction_ptr_b(pc,memory);
+    if(memory[pc].a_add_mod==immediate){
+    	memory[to].opc = DAT;
+    	memory[to].a_add_mod = invalid_address_mode;
+    	memory[to].a_value = 0;
+    	memory[to].b_add_mod = immediate;
+    	memory[to].b_value = _mod(memory[pc].a_value);
+    	printf("MOV %d nach %d\n",_mod(memory[pc].a_value), to);
+    }
+    else{
+    	from = get_instuction_ptr_a(pc,memory);
+    	memory[to]=memory[from];
+    	printf("MOV von %d nach %d\n",from, to);
+    }
 }
 
 void add(int pc, instruction memory[]){
     int a, b, c;
-    a = getValue(pc, memory, memory[pc].a_add_mod,memory[pc].a_value);
-    b = getValue(pc, memory, memory[pc].b_add_mod,memory[pc].b_value);
+    a = get_a_value(pc, memory);
+    b = get_b_value(pc, memory);
     c = _mod(a + b);
-    setValue(pc, memory, memory[pc].b_add_mod, memory[pc].b_value, c);
+    set_b_value(pc, memory, c);
 
     printf("ADD %d + %d = %d\n",a, b, c);
 }
 
 void sub(int pc, instruction memory[]){
     int a, b, c;
-    a = getValue(pc, memory, memory[pc].a_add_mod,memory[pc].a_value);
-    b = getValue(pc, memory, memory[pc].b_add_mod,memory[pc].b_value);
+    a = get_a_value(pc, memory);
+    b = get_b_value(pc, memory);
     c = _mod(a - b);
-    setValue(pc, memory, memory[pc].b_add_mod, memory[pc].b_value, c);
+    set_b_value(pc, memory, c);
 
     printf("SUB %d - %d = %d\n",a, b, c);
 }
 void jmp(int *pc, instruction memory[]){
-    *pc = _mod(getValue(*pc, memory, memory[*pc].a_add_mod,memory[*pc].a_value));
+    *pc = get_instuction_ptr_a(*pc,memory);
     printf("JMP to %d \n",*pc);
 }
 void jmz(int *pc, instruction memory[]){
     int check_value;
     if (memory[*pc].a_add_mod!=immediate){
-        check_value = getValue(*pc, memory, memory[*pc].b_add_mod,memory[*pc].b_value);
+        check_value = get_b_value(*pc, memory);
         if (check_value == 0){
-            *pc = _mod(getValue(*pc, memory, memory[*pc].a_add_mod,memory[*pc].a_value));
+            *pc = get_instuction_ptr_a(*pc,memory);
             printf("JMZ to %d \n",*pc);
         }
         else{
@@ -137,9 +188,9 @@ void jmz(int *pc, instruction memory[]){
 void jmg(int *pc, instruction memory[]){
     int check_value;
     if (memory[*pc].a_add_mod!=immediate){
-        check_value = getValue(*pc, memory, memory[*pc].b_add_mod,memory[*pc].b_value);
+        check_value = get_b_value(*pc, memory);
         if (check_value > 0){
-            *pc = _mod(getValue(*pc, memory, memory[*pc].a_add_mod,memory[*pc].a_value));
+            *pc = get_instuction_ptr_a(*pc,memory);
             printf("JMG to %d \n",*pc);
         }
         else{
@@ -154,11 +205,11 @@ void jmg(int *pc, instruction memory[]){
 void djn(int *pc, instruction memory[]){
     int check_value;
     if (memory[*pc].a_add_mod!=immediate){
-        check_value = getValue(*pc, memory, memory[*pc].b_add_mod,memory[*pc].b_value);
-        check_value = _mod(check_value -1);
-        setValue(*pc, memory, memory[*pc].b_add_mod, memory[*pc].b_value, check_value );
+        check_value = get_b_value(*pc, memory);
+        check_value = _mod(check_value - 1);
+        set_b_value(*pc, memory, check_value );
         if (check_value != 0){
-            *pc = _mod(getValue(*pc, memory, memory[*pc].a_add_mod,memory[*pc].a_value));
+            *pc = get_instuction_ptr_a(*pc,memory);
             printf("DJN to %d \n",*pc);
         }
         else{
@@ -173,8 +224,8 @@ void djn(int *pc, instruction memory[]){
 
 void cmp(int *pc, instruction memory[]){
     int a, b, c;
-    a = getValue(*pc, memory, memory[*pc].a_add_mod,memory[*pc].a_value);
-    b = getValue(*pc, memory, memory[*pc].b_add_mod,memory[*pc].b_value);
+    a = get_a_value(*pc, memory);
+    b = get_b_value(*pc, memory);
     if (a == b)
         c = 2;
     else
@@ -183,41 +234,43 @@ void cmp(int *pc, instruction memory[]){
     printf("CMP, Inc: %d\n",c );
 }
 
-opcode evaluate_instuktion(int pc, instruction memory[]){
-    opcode result = memory[pc].opc;
+opcode evaluate_instuktion(int *pc, instruction memory[]){
+    opcode result = memory[*pc].opc;
     switch (result){
         case DAT:
-            dat(pc,memory);
             // verloren!!!
+            dat(*pc,memory);
             break;
         case MOV:
-            mov(pc,memory);
+            mov(*pc,memory);
             break;
         case ADD:
-            add(pc,memory);
+            add(*pc,memory);
             break;
         case SUB:
-            sub(pc,memory);
+            sub(*pc,memory);
             break;
         case JMP:
-            jmp(&pc,memory);
+            jmp(pc,memory);
             break;
         case JMZ:
-            jmz(&pc,memory);
+            jmz(pc,memory);
             break;
         case JMG:
-            jmg(&pc,memory);
+            jmg(pc,memory);
             break;
         case DJN:
-            djn(&pc,memory);
+            djn(pc,memory);
             break;
         case CMP:
-            cmp(&pc,memory);
+            cmp(pc,memory);
             break;
         default:
             result  = invalid_opcode;
             break;
     }
+    if (result>0&&result<4)
+        *pc = _mod(*pc + 1);
     return result;
 }
 
@@ -232,7 +285,6 @@ int read_instructions(FILE* file, instruction player[], int pc){
         opc -= 48;
         switch (opc){
         case 0:
-            //player[i].opc = 0;
             fscanf(file," %d\n", &player[i].b_value);
             break;
         case 4:
@@ -246,6 +298,11 @@ int read_instructions(FILE* file, instruction player[], int pc){
         player[i].opc = opc;
     }
     return i - pc;
+}
+
+void ignore_DAT(int* pc, instruction memory[]){
+    while(memory[*pc].opc == DAT)
+        *pc = *pc + 1;
 }
 /**
  * Die Programme sollen zu Begin mindestens 300 Instruktionen weit ausseinander liegen
@@ -270,6 +327,10 @@ void init_memory(int *pc_one, int *pc_two, FILE* file1, FILE* file2, instruction
 
     end_player_two = (*pc_two + read_instructions(file2, memory, *pc_two)) % MEM_SIZE;
     printf("PC Player Two: Start=%d Instructions=%d \n",*pc_two, end_player_two - *pc_two);
+
+    // setzte PC auf erste nicht DAT Anweisung
+    ignore_DAT(pc_one,memory);
+    ignore_DAT(pc_two,memory);
 }
 
 int main(int argc, char** argv){
@@ -279,8 +340,6 @@ int main(int argc, char** argv){
     }
     FILE* file1 = fopen(argv[1],"r");
     FILE* file2 = fopen(argv[2],"r");
-    //FILE* file1 = fopen("Imp.o","r");
-    //FILE* file2 = fopen("Imp.o","r");
     if (file1==NULL || file2==NULL){
         printf("Can't open File\n");
         return -1;
@@ -291,15 +350,25 @@ int main(int argc, char** argv){
 
     init_memory(&pc_one, &pc_two, file1, file2, memory);
 
+    //int i=0;
     //Eventloop
     do{
-        current_opc_one = evaluate_instuktion(pc_one,memory);
-        pc_one++;
+    	printf("Programm one (%04d):\t", pc_one);
+        current_opc_one = evaluate_instuktion(&pc_one,memory);
 
-        current_opc_two = evaluate_instuktion(pc_two,memory);
-        pc_two++;
+        printf("Programm two (%04d):\t", pc_two);
+        current_opc_two = evaluate_instuktion(&pc_two,memory);
+        //if (i++> 2 * 28 -1)
+        //    return 1;
+        //current_opc_two =1;
 
     } while (current_opc_one && current_opc_two);
+    
+    if (current_opc_one)
+        printf("Programm one wins\n");
+    else 
+        printf("Programm two wins\n");
+
     fclose(file1);
     fclose(file2);
     return 0;
