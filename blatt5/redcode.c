@@ -66,12 +66,12 @@ int getValue(int pc, instruction memory[], address_mode mode, int value){
     case decrement:
         if (memory[pc].b_add_mod == decrement){
            memory[_mod(pc + value)].b_value = _mod(memory[_mod(pc + value)].b_value - 1);
-           result = memory[_mod(pc + value + memory[_mod(pc + value)].b_value)].b_value; 
+           result = memory[_mod(pc + value + memory[_mod(pc + value)].b_value)].b_value;
         }
         else{
            memory[_mod(pc + value)].a_value = _mod(memory[_mod(pc + value)].a_value - 1);
            result = memory[_mod(pc + value + memory[_mod(pc + value)].a_value)].a_value;
-        }       
+        }
         break;
     default:
         result = (int) invalid_address_mode;
@@ -179,7 +179,7 @@ void cmp(int *pc, instruction memory[]){
         c = 2;
     else
         c = 1;
-    *pc= _mod(*pc + c); 
+    *pc= _mod(*pc + c);
     printf("CMP, Inc: %d\n",c );
 }
 
@@ -223,8 +223,8 @@ opcode evaluate_instuktion(int pc, instruction memory[]){
 
 
 /**
- * Annahme: Eine Zeile == Eine Instruktion und ein blank als Trennzeichen 
- * for Schleife: Erstes Byte mit fgetc einlesen. Anhand dieses Opcodes die Struktur des restlichen Ausdrucks bestimmen 
+ * Annahme: Eine Zeile == Eine Instruktion und ein blank als Trennzeichen
+ * for Schleife: Erstes Byte mit fgetc einlesen. Anhand dieses Opcodes die Struktur des restlichen Ausdrucks bestimmen
  * */
 int read_instructions(FILE* file, instruction player[], int pc){
     int i, opc;
@@ -232,7 +232,7 @@ int read_instructions(FILE* file, instruction player[], int pc){
         opc -= 48;
         switch (opc){
         case 0:
-            player[i].opc = 0;
+            //player[i].opc = 0;
             fscanf(file," %d\n", &player[i].b_value);
             break;
         case 4:
@@ -243,6 +243,7 @@ int read_instructions(FILE* file, instruction player[], int pc){
             break;
 
         }
+        player[i].opc = opc;
     }
     return i - pc;
 }
@@ -259,7 +260,7 @@ void init_memory(int *pc_one, int *pc_two, FILE* file1, FILE* file2, instruction
 
     srand(time(0));
     *pc_one = rand() % MEM_SIZE;
-    
+
     end_player_one = (*pc_one + read_instructions(file1, memory, *pc_one)) % MEM_SIZE;
     printf("PC Player One: Start=%d Instructions=%d \n",*pc_one, end_player_one - *pc_one);
 
@@ -278,6 +279,8 @@ int main(int argc, char** argv){
     }
     FILE* file1 = fopen(argv[1],"r");
     FILE* file2 = fopen(argv[2],"r");
+    //FILE* file1 = fopen("Imp.o","r");
+    //FILE* file2 = fopen("Imp.o","r");
     if (file1==NULL || file2==NULL){
         printf("Can't open File\n");
         return -1;
