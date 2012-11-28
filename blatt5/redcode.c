@@ -25,7 +25,7 @@ int _mod(int i){
 
 int get_instuction_ptr_a(int pc, instruction memory[]){
     address_mode mode =  memory[pc].a_add_mod;
-    int result, value = memory[pc].a_value;
+    int result, value = memory[pc].a_value, dec;
 
     switch (mode) {
         case immediate:
@@ -39,8 +39,9 @@ int get_instuction_ptr_a(int pc, instruction memory[]){
             result = _mod(pc + value + memory[_mod(pc + value)].a_value);
             break;
         case decrement:
-            memory[_mod(pc + value)].a_value = _mod(memory[_mod(pc + value)].a_value - 1);
-            result = _mod(memory[_mod(pc + value + memory[_mod(pc + value)].a_value)].a_value);
+        	dec = _mod(memory[_mod(pc + value)].a_value - 1);
+        	memory[_mod(pc + value)].a_value = dec;
+        	result = _mod(pc + value + dec);
             break;
         default:
             result = (int) invalid_address_mode;
@@ -51,7 +52,7 @@ int get_instuction_ptr_a(int pc, instruction memory[]){
 
 int get_instuction_ptr_b(int pc, instruction memory[]){
     address_mode mode =  memory[pc].b_add_mod;
-    int result, value = memory[pc].b_value;
+    int result, value = memory[pc].b_value, dec;
     switch (mode) {
         case immediate:
             printf("Addressing of immediate is undefined\n");
@@ -64,8 +65,9 @@ int get_instuction_ptr_b(int pc, instruction memory[]){
             result = _mod(pc + value + memory[_mod(pc + value)].b_value);
             break;
         case decrement:
-            memory[_mod(pc + value)].b_value = _mod(memory[_mod(pc + value)].b_value - 1);
-            result = _mod(memory[_mod(pc + value + memory[_mod(pc + value)].b_value)].b_value);
+        	dec = _mod(memory[_mod(pc + value)].b_value - 1);
+            memory[_mod(pc + value)].b_value = dec;
+            result = _mod(pc + value + dec);
             break;
         default:
             result = (int) invalid_address_mode;
@@ -178,6 +180,7 @@ void jmz(int *pc, instruction memory[]){
             printf("JMZ to %d \n",*pc);
         }
         else{
+        	*pc = _mod(*pc+1);
             printf("No JMZ. Value not zero.\n");
         }
 
@@ -194,6 +197,7 @@ void jmg(int *pc, instruction memory[]){
             printf("JMG to %d \n",*pc);
         }
         else{
+        	*pc = _mod(*pc+1);
             printf("No JMG. Value zero.\n");
         }
 
@@ -213,6 +217,7 @@ void djn(int *pc, instruction memory[]){
             printf("DJN to %d \n",*pc);
         }
         else{
+        	*pc = _mod(*pc+1);
             printf("No DJN. Value zero.\n");
         }
 
