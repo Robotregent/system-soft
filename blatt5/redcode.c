@@ -186,6 +186,7 @@ void jmz(int *pc, instruction memory[]){
 
     }else{
         printf("Invalid address_mode while trying JMZ\n");
+        exit(2);
     }
 }
 void jmg(int *pc, instruction memory[]){
@@ -203,6 +204,7 @@ void jmg(int *pc, instruction memory[]){
 
     }else{
         printf("Invalid address_mode while trying JMG\n");
+        exit(2);
     }
 
 }
@@ -223,6 +225,7 @@ void djn(int *pc, instruction memory[]){
 
     }else{
         printf("Invalid address_mode while trying DJN\n");
+        exit(2);
     }
 
 }
@@ -286,28 +289,28 @@ opcode evaluate_instuktion(int *pc, instruction memory[]){
  * */
 int read_instructions(FILE* file, instruction player[], int pc){
     int i, opc;
-    for(i=pc; i < (PROG_SIZE + pc) && ((opc=fgetc(file))>47) && opc < 58 ; i=_mod(i+1)) {
+    for(i=0; i < PROG_SIZE && ((opc=fgetc(file))>47) && opc < 58 ; i++) {
         opc -= 48;
         switch (opc){
         case 0:
-            fscanf(file," %d\n", &player[i].b_value);
+            fscanf(file," %d\n", &player[_mod(pc+i)].b_value);
             break;
         case 4:
-            fscanf(file," %d %d\n", &player[i].a_add_mod, &player[i].a_value);
+            fscanf(file," %d %d\n", &player[_mod(pc+i)].a_add_mod, &player[_mod(pc+i)].a_value);
             break;
         default:
-            fscanf(file," %d %d %d %d\n", &player[i].a_add_mod, &player[i].a_value, &player[i].b_add_mod, &player[i].b_value);
+            fscanf(file," %d %d %d %d\n", &player[_mod(pc+i)].a_add_mod, &player[_mod(pc+i)].a_value, &player[_mod(pc+i)].b_add_mod, &player[_mod(pc+i)].b_value);
             break;
 
         }
-        player[i].opc = opc;
+        player[_mod(pc+i)].opc = opc;
     }
-    return i - pc;
+    return i;
 }
 
 void ignore_DAT(int* pc, instruction memory[]){
     while(memory[*pc].opc == DAT)
-        *pc = *pc + 1;
+        *pc = _mod(*pc + 1);
 }
 /**
  * Die Programme sollen zu Begin mindestens 300 Instruktionen weit ausseinander liegen
@@ -323,15 +326,15 @@ void init_memory(int *pc_one, int *pc_two, FILE* file1, FILE* file2, instruction
     srand(time(0));
     *pc_one = rand() % MEM_SIZE;
 
-    end_player_one = (*pc_one + read_instructions(file1, memory, *pc_one)) % MEM_SIZE;
-    printf("PC Player One: Start=%d Instructions=%d \n",*pc_one, end_player_one - *pc_one);
+    end_player_one = _mod(*pc_one + read_instructions(file1, memory, *pc_one));
+    printf("PC Player One: Start=%d Instructions=%d \n",*pc_one, _mod(end_player_one - *pc_one));
 
     do{
         *pc_two = rand() % MEM_SIZE;
-    } while ((end_player_one + MIN_PGRM_DIST + PROG_SIZE) > *pc_two );
+    } while (( _mod(end_player_one + MIN_PGRM_DIST) > *pc_two) || (_mod(*pc_two + PROG_SIZE) < *pc_one));
 
     end_player_two = (*pc_two + read_instructions(file2, memory, *pc_two)) % MEM_SIZE;
-    printf("PC Player Two: Start=%d Instructions=%d \n",*pc_two, end_player_two - *pc_two);
+    printf("PC Player Two: Start=%d Instructions=%d \n",*pc_two, _mod(end_player_two - *pc_two));
 
     // setzte PC auf erste nicht DAT Anweisung
     ignore_DAT(pc_one,memory);
@@ -355,7 +358,6 @@ int main(int argc, char** argv){
 
     init_memory(&pc_one, &pc_two, file1, file2, memory);
 
-    //int i=0;
     //Eventloop
     do{
     	printf("Programm one (%04d):\t", pc_one);
@@ -363,9 +365,6 @@ int main(int argc, char** argv){
 
         printf("Programm two (%04d):\t", pc_two);
         current_opc_two = evaluate_instuktion(&pc_two,memory);
-        //if (i++> 2 * 28 -1)
-        //    return 1;
-        //current_opc_two =1;
 
     } while (current_opc_one && current_opc_two);
     
