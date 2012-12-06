@@ -19,3 +19,11 @@ Vigenère cipher und knacken einer Vigenère cipher
 Blatt 5
 -------
 Implementierung der virtuellen redcode Maschine für CoreWars
+
+Blatt6
+------
+Einfacher Baum
+
+Blatt7
+------
+Eigene dynamische Speicherverwaltung
