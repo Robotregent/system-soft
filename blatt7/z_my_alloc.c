@@ -6,7 +6,7 @@
 typedef struct header{
     size_t size;    
     struct header *next;
-    struct header *prev;
+    struct header *child; // zeigt auf sich selbst, wenn Block belegt. Sonst 0 oder auf abgetrennte Flächen in diesem Block.
 } header;
 
 
@@ -20,7 +20,7 @@ typedef long align;
 
 void init_my_alloc() {
     root.next = &root;
-    root.prev = &root;
+    root.child = 0;
     root.size = 0;
     node = &root;
 }
@@ -28,13 +28,10 @@ void init_my_alloc() {
 void append_new(header *old, header *new){
     new->next = old->next;
     old->next = new;
-    new->prev = old;
-    new->next->prev = new;
 }
-void remove_used(header *n){
-    n->prev->next = n->next;
-    n->next->prev = n->prev;
-    n->next = n->prev;
+void remove_from_free_ring(header *prev, header *current){
+    prev->next = current->next;
+    while(prev->child!=0 && prev->child!=
 }
 void insert_after_use(header *n){
     n->next = n->prev->next;
@@ -91,13 +88,8 @@ void* my_alloc(size_t size) {
     // oder:
     //
     // Der Block ist zu groß, dann muss er von hinten verkleinert werden
-    // -> Neuer Header new_H erstellen. 
-    // -> header *new_header = (header *)((char *) current + current->size - size;
-    // -> current->size -= size + sizeof(header);
-    // -> return new_header + 1;
 
     //if (current->size == size)
-     
     if (current->size < size + 2 * sizeof(header)){
         node = current->next;     // circular first fit
         remove_used(current);     // Block aus dem Ring freier Flächen entfernen
@@ -107,24 +99,23 @@ void* my_alloc(size_t size) {
         result = (void *) (current + 1);
     }
     else {
+        node = current;
         header *new_header=(header *)((char *) current + current->size - size);
+        new_header->size = size;
+        new_header->prev = current;
+        new_header->next = current;
+        current->size -= size + sizeof(header);
         result = (void *) (new_header + 1);
     }
-    /*
-    node = current;
-
-    header *newnode = (header *)((char *)current + current->size - size);
-    
-    newnode->size = size;
-    newnode->next = current;
-    
-    header *next = successor(current);
-
-    current->size -= size + sizeof(header);
-    return (void *)(newnode + 1);
-    */
 
     return result;
+}
+
+int join(header* prev, header* current){
+    header *n = (header *)((char*) prev + sizeof(header) + prev->size);
+    if (n!=current || prev->size == 0)
+        return 0;
+
 }
 
 void my_free(void* ptr) {
