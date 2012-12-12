@@ -6,12 +6,12 @@
 typedef struct header{
     size_t size;    
     struct header *next;
-    struct header *child; // zeigt auf sich selbst, wenn Block belegt. Sonst 0 oder auf abgetrennte Flächen in diesem Block.
+    struct header *succ; // zeigt auf die Fläche direkt rechts.
 } header;
 
 
 // Wurzelelement 
-header root;
+header *root;
 // Aktuelles Element des Rings gemäß circular first fit
 header *node;
 
@@ -19,20 +19,72 @@ typedef long align;
 
 
 void init_my_alloc() {
-    root.next = &root;
-    root.child = 0;
-    root.size = 0;
-    node = &root;
+    void *block = get_block_from_system();
+    if (!block)
+        exit(1);
+    root = (header *) block;
+    node = root + 1;
+    root->size = 0;
+    root->next = node;
+    root->succ = node;
+    node->size = BLOCKSIZE - 2 * sizeof(header);
+    node->next = root;
+    node->succ = root;
 }
-
+bool is_allocated(header* current) {
+    /* Das Wurzelelement ist immer frei */
+    if (current == root) 
+        return false;
+    /* Wenn der Zeiger vorwaerts zeigt, dann ist es frei */
+    if (current->next > current) 
+        return false;
+    /* Der Zeiger zeigt jetzt rueckwaerts, denn
+     *       ptr->next == ptr ist nur beim Wurzelelement moeglich */
+    /* Wenn nicht auf Wurzel verwiesen wird, ist ptr belegt */
+    if (current->next != root) 
+        return true;
+    /* Wenn ptr->next auf die Wurzel verweist, gibt es zwei
+     * Faelle:
+     *  - Es ist belegt und ptr liegt unmittelbar hinter
+     *    dem Wurzelelement
+     *  - Es ist frei und ptr zeigt auf die freie Speicherflaeche
+     *    mit der hoechsten Adresse
+     *                                   */
+    /* Wenn root->next jenseits von ptr zeigt, dann ist ptr belegt */
+    if (root->next > current) 
+        return true;
+    /* Wenn die Wurzel das einzige freie Element ist,
+    *       dann ist ptr ebenfalls belegt */
+    return root->next == root;
+}
 void append_new(header *old, header *new){
+    
+    //Aufsteigend sorieren fehlt noch
+
     new->next = old->next;
     old->next = new;
+    new->succ = old->succ;
+    old->succ = new;
+
 }
-void remove_from_free_ring(header *prev, header *current){
-    prev->next = current->next;
-    while(prev->child!=0 && prev->child!=
+void trim_block(header *old, header *new, int size){
+    new->next = old;
+    new->succ = old->succ;
+    if (old->succ->next == old)
+        old->succ->next = new;
+    old->succ = new;
+    new->size = size;
+    old->size -= size + sizeof(header);
 }
+void remove_from_free_ring(header *prev_free, header *current){
+    header *prev;
+    prev_free->next = current->next;
+    for(header *p; p < current; p = current->succ){
+        prev = p;
+    }
+    current->next = prev;
+}
+/*
 void insert_after_use(header *n){
     n->next = n->prev->next;
     n->prev->next = n;
@@ -40,7 +92,7 @@ void insert_after_use(header *n){
     //    n->next->next = n;
     n->next->prev = n;
 }
-
+*/
 void* my_alloc(size_t size) {
     if (size <= 0)
         exit(1);
@@ -50,13 +102,15 @@ void* my_alloc(size_t size) {
     // Sollte eigentlich laut Aufgabenstellung nicht notwendig sein
     if (size % sizeof(align))
         size += sizeof(align) - size % sizeof(align);
-
-    header *current = node;
+    
+    header *prev = node;
+    header *current = node->next;
 
     // Suche ausreichend große freie Fläche
     do {
         if (current->size >= size)
             break;
+        prev = current;
         current = current->next;
     } while (current != node);
 
@@ -75,7 +129,7 @@ void* my_alloc(size_t size) {
             exit(1);
         header *new_header = (header *) block;
         new_header->size = BLOCKSIZE - sizeof(header);
-        append_new(node, new_header);
+        append_new(current, new_header);
         current = new_header;
     }
 
@@ -91,20 +145,17 @@ void* my_alloc(size_t size) {
 
     //if (current->size == size)
     if (current->size < size + 2 * sizeof(header)){
-        node = current->next;     // circular first fit
-        remove_used(current);     // Block aus dem Ring freier Flächen entfernen
+        node = current;                             // circular first fit
+        remove_from_free_ring(prev,current);        // Block aus dem Ring freier Flächen entfernen
 
         if (current == node)
-            node = &root;
+            node = root;
         result = (void *) (current + 1);
     }
     else {
         node = current;
         header *new_header=(header *)((char *) current + current->size - size);
-        new_header->size = size;
-        new_header->prev = current;
-        new_header->next = current;
-        current->size -= size + sizeof(header);
+        trim_block(current,new_header,size);
         result = (void *) (new_header + 1);
     }
 
