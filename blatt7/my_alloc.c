@@ -1,41 +1,101 @@
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include "my_alloc.h"
 #include "my_system.h"
     
 typedef struct header{
     size_t size;    
     struct header *next;
-    struct header *prev;
+    struct header *succ; // zeigt auf die Fläche direkt rechts.
 } header;
 
 
 // Wurzelelement 
-header root;
+header *root;
 // Aktuelles Element des Rings gemäß circular first fit
 header *node;
+header *max_addr;
 
 typedef long align;
 
 
 void init_my_alloc() {
-    root.next = &root;
-    root.prev = &root;
-    root.size = 0;
-    node = &root;
+    void *block = get_block_from_system();
+    if (!block)
+        exit(1);
+    root = (header *) block;
+    node = root + 1;
+    root->size = 0;
+    root->next = node;
+    root->succ = node;
+    node->size = BLOCKSIZE - 2 * sizeof(header);
+    node->next = root;
+    node->succ = root;
+    max_addr = node;
+    printf("init\n");    
 }
-
-void append_new(header *old, header *new){
+bool is_allocated(header* current) {
+    /* Das Wurzelelement ist immer frei */
+    if (current == root) 
+        return false;
+    /* Wenn der Zeiger vorwaerts zeigt, dann ist es frei */
+    if (current->next > current) 
+        return false;
+    /* Der Zeiger zeigt jetzt rueckwaerts, denn
+     *       ptr->next == ptr ist nur beim Wurzelelement moeglich */
+    /* Wenn nicht auf Wurzel verwiesen wird, ist ptr belegt */
+    if (current->next != root) 
+        return true;
+    /* Wenn ptr->next auf die Wurzel verweist, gibt es zwei
+     * Faelle:
+     *  - Es ist belegt und ptr liegt unmittelbar hinter
+     *    dem Wurzelelement
+     *  - Es ist frei und ptr zeigt auf die freie Speicherflaeche
+     *    mit der hoechsten Adresse
+     *                                   */
+    /* Wenn root->next jenseits von ptr zeigt, dann ist ptr belegt */
+    if (root->next > current) 
+        return true;
+    /* Wenn die Wurzel das einzige freie Element ist,
+    *       dann ist ptr ebenfalls belegt */
+    return root->next == root;
+}
+header *append_new(header *new){
+    header *old;
+    //Aufsteigend sorieren fehlt noch
+    if (new > max_addr)
+	old = max_addr;
+    if (new < max_addr->succ)
+	old  = max_addr->succ;
+    for(header *p = max_addr->succ;p<new ;p=p->succ) {
+	old = p;
+    }
+    printf("old %p new %p",old,new);
     new->next = old->next;
     old->next = new;
-    new->prev = old;
-    new->next->prev = new;
+    new->succ = old->succ;
+    old->succ = new;
+    return old;
 }
-void remove_used(header *n){
-    n->prev->next = n->next;
-    n->next->prev = n->prev;
-    n->next = n->prev;
+void trim_block(header *old, header *new, int size){
+    new->next = old;
+    new->succ = old->succ;
+    if (old->succ->next == old)
+        old->succ->next = new;
+    old->succ = new;
+    new->size = size;
+    old->size -= size + sizeof(header);
 }
+void remove_from_free_ring(header *prev_free, header *current){
+    header *prev;
+    prev_free->next = current->next;
+    for(header *p; p < current; p = current->succ){
+        prev = p;
+    }
+    current->next = prev;
+}
+/*
 void insert_after_use(header *n){
     n->next = n->prev->next;
     n->prev->next = n;
@@ -43,7 +103,7 @@ void insert_after_use(header *n){
     //    n->next->next = n;
     n->next->prev = n;
 }
-
+*/
 void* my_alloc(size_t size) {
     if (size <= 0)
         exit(1);
@@ -53,13 +113,15 @@ void* my_alloc(size_t size) {
     // Sollte eigentlich laut Aufgabenstellung nicht notwendig sein
     if (size % sizeof(align))
         size += sizeof(align) - size % sizeof(align);
-
-    header *current = node;
+    
+    header *prev = node;
+    header *current = node->next;
 
     // Suche ausreichend große freie Fläche
     do {
         if (current->size >= size)
             break;
+        prev = current;
         current = current->next;
     } while (current != node);
 
@@ -78,8 +140,9 @@ void* my_alloc(size_t size) {
             exit(1);
         header *new_header = (header *) block;
         new_header->size = BLOCKSIZE - sizeof(header);
-        append_new(node, new_header);
+        prev=append_new(new_header);
         current = new_header;
+        printf("neuer Block %p\n",current);    
     }
 
     // Situation:
@@ -91,40 +154,32 @@ void* my_alloc(size_t size) {
     // oder:
     //
     // Der Block ist zu groß, dann muss er von hinten verkleinert werden
-    // -> Neuer Header new_H erstellen. 
-    // -> header *new_header = (header *)((char *) current + current->size - size;
-    // -> current->size -= size + sizeof(header);
-    // -> return new_header + 1;
 
-    //if (current->size == size)
-     
     if (current->size < size + 2 * sizeof(header)){
-        node = current->next;     // circular first fit
-        remove_used(current);     // Block aus dem Ring freier Flächen entfernen
+        node = current;                             // circular first fit
+        remove_from_free_ring(prev,current);        // Block aus dem Ring freier Flächen entfernen
 
         if (current == node)
-            node = &root;
+            node = root;
         result = (void *) (current + 1);
+	printf("Ganzer Block weg: %p\n",current);
     }
     else {
+        node = current;
         header *new_header=(header *)((char *) current + current->size - size);
+        trim_block(current,new_header,size);
         result = (void *) (new_header + 1);
+	printf("Block verkleinern %p\n",new_header);
     }
-    /*
-    node = current;
-
-    header *newnode = (header *)((char *)current + current->size - size);
-    
-    newnode->size = size;
-    newnode->next = current;
-    
-    header *next = successor(current);
-
-    current->size -= size + sizeof(header);
-    return (void *)(newnode + 1);
-    */
 
     return result;
+}
+
+int join(header* prev, header* current){
+    header *n = (header *)((char*) prev + sizeof(header) + prev->size);
+    if (n!=current || prev->size == 0)
+        return 0;
+
 }
 
 void my_free(void* ptr) {

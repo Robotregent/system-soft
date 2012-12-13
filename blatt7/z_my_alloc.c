@@ -1,5 +1,6 @@
 #include <stdlib.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include "my_alloc.h"
 #include "my_system.h"
     
@@ -30,6 +31,7 @@ void init_my_alloc() {
     node->size = BLOCKSIZE - 2 * sizeof(header);
     node->next = root;
     node->succ = root;
+    printf("init\n");    
 }
 bool is_allocated(header* current) {
     /* Das Wurzelelement ist immer frei */
@@ -119,6 +121,7 @@ void* my_alloc(size_t size) {
     // oder eben nicht ;)
 
     if (current->size < size){
+        printf("neuer Block\n");    
         // Kein ausreichend großer Block da.
         // Neuen Block anforder
         // Header erstellen
@@ -143,8 +146,8 @@ void* my_alloc(size_t size) {
     //
     // Der Block ist zu groß, dann muss er von hinten verkleinert werden
 
-    //if (current->size == size)
     if (current->size < size + 2 * sizeof(header)){
+        printf("Ganzer Block weg\n");    
         node = current;                             // circular first fit
         remove_from_free_ring(prev,current);        // Block aus dem Ring freier Flächen entfernen
 
@@ -153,6 +156,7 @@ void* my_alloc(size_t size) {
         result = (void *) (current + 1);
     }
     else {
+        printf("Block verkleinern\n");    
         node = current;
         header *new_header=(header *)((char *) current + current->size - size);
         trim_block(current,new_header,size);
