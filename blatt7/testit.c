@@ -291,6 +291,7 @@ int main (int argc, char * argv[])
 			if (alloc > maxalloc)
 				maxalloc = alloc;
 			gettimeofday (&tp1, 0);
+			//print_ring();
 			data[nptr].ptr = my_alloc (sz);
 			gettimeofday (&tp2, 0);
 			//printf ("ALLOC: %u %u\n", data[nptr].ptr, sz);
@@ -337,6 +338,7 @@ int main (int argc, char * argv[])
 			alloc -= data[idx].len;
 			nalloc--;
 			gettimeofday (&tp1, 0);
+			//print_ring();
 			my_free (data[idx].ptr);
 			gettimeofday (&tp2, 0);
 			//printf ("FREE: %u %u\n", data[idx].ptr, data[idx].len);
@@ -371,5 +373,6 @@ int main (int argc, char * argv[])
 		pts = 0;
 	}
 	printf ("Points for this test: %lf\n", pts);
+    //print_ring(); 
 	return 0;
 }
