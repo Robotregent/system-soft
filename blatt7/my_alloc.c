@@ -42,11 +42,11 @@ void init_my_alloc() {
     node->succ = root;
     node->flag = is_free; 
     min_address = root;
-    D printf("Root:\t %p\n",root);
+    printf("Root:\t %p\n",root);
     D printf("Node:\t %p\n",node);
     D printf("Min:\t %p\n",min_address);
 }
-header* append_new(header *new){
+extern inline header* append_new(header *new){
     if (new > min_address){
         D printf("Nicht absteigend!\n");
         exit (1);
@@ -56,36 +56,30 @@ header* append_new(header *new){
     while (min_free->flag == is_alloc){
         min_free = min_free->succ;
     }
-
-    if (min_free->flag == is_alloc){
-        D printf("\nKein min_free %p ",min_free);
-       exit(1);
-    }
-        
-    D printf("\nmin_free %p ",min_free);
     header *max_free = min_free;
     while(max_free->next != min_free){
         max_free = max_free->next;
     }
-    D printf("max_free %p \n",max_free);
-    header *prev = min_address->succ;
+    header *prev = min_address;
     while(prev->succ != min_address){
         prev = prev->succ;
     }
-    // for (header *p = prev; p != min_address; p = p->succ){
-    //     prev = p;
-    // }
-    D printf("prev %p\n",prev);
+    D printf("min_address: %p prev: %p min_free: %p max_free: %p \n",min_address, prev,min_free,max_free);
+
+    D printf("\n");
+
+    // Allgemeiner Ring
+    if (min_address->flag == is_alloc){
+        min_address->next = new;
+        D printf("DO it \n");
+
+    }
+    prev->succ = new;
+    new->succ = min_address;
 
     // Ring der freien Elemente
     new->next = min_free;
     max_free->next = new;
-
-    // Allgemeiner Ring
-    prev->succ = new;
-    new->succ = min_address;
-    
-    //min_address->next = new; //?
 
     min_address = new;
 
@@ -93,7 +87,9 @@ header* append_new(header *new){
 
     return max_free;
 }
-void trim_block(header *old, header *new, int size){
+
+extern inline void trim_block(header *old, header *new, int size){
+    D printf("\nOld->size: %d size %d\n", old->size, size);
     new->next = old;
     new->succ = old->succ;
     if (old->succ->next == old && old->succ != root  && old->succ->flag == is_alloc)
@@ -102,9 +98,9 @@ void trim_block(header *old, header *new, int size){
     new->size = size;
     old->size -= size + sizeof(header);
     new->flag = is_alloc;
-    //printf("old->size: %d size %d succ %p\n", old->size, size,new->succ);
+    
 }
-void remove_from_free_ring(header *prev_free, header *current){
+extern inline void remove_from_free_ring(header *prev_free, header *current){
     header *prev;
  //   if (current->next==prev_free)
  //       exit (1);
@@ -114,32 +110,16 @@ void remove_from_free_ring(header *prev_free, header *current){
         while (prev->succ < current){
             prev = prev->succ;
         }
-        // for(header *p=prev_free->succ; p < current; p = p->succ){
-        //     prev = p;
-        // }
     }
     else {
         prev = current->succ;
         while (prev->succ != current){
             prev = prev->succ;
         }
-        // for(header *p=prev; p != current; p = p->succ){
-        //     prev = p;
-        // }
-    }
-    
+    }    
     current->next = prev;
     current->flag = is_alloc;
 }
-/*
-void insert_after_use(header *n){
-    n->next = n->prev->next;
-    n->prev->next = n;
-    //if (n->next->prev == n->next->next)
-    //    n->next->next = n;
-    n->next->prev = n;
-}
-*/
 void* my_alloc(size_t size) {
     if (size <= 0)
         exit(1);
@@ -180,16 +160,13 @@ void* my_alloc(size_t size) {
         header *new_header = (header *) block;
         new_header->size = BLOCKSIZE - sizeof(header);
         prev = append_new(new_header);
-//        prev = root;                               // Einzige Möglichkeit. Update: Stimmt nicht!
         current = new_header;
         D printf("Neuer Block %p\n",current);    
     }
-    //D printf("Zu nutzen %p\n",current);
 
-    if (current->size < size +2 * sizeof(header)){
-        D printf("Prev %p. Ganzer Block weg ",prev);
-
-        if (current == node)                  // if (current->next == node)
+    if (current->size < size + 2 * sizeof(header)){
+        D printf("Ganzer Block weg ");
+        if (current == node)                        
             node = root;
         else
             node = current->next;                   // circular first fit
@@ -236,8 +213,7 @@ void my_free(void* current_ptr) {
     while (prev->flag == is_alloc){
         prev = prev->next;
     }
-    //D  printf("prev %p\n",prev);
-    D printf("prev %p flag %d\n",prev,prev->flag);
+
     current->next = prev->next;
     prev->next = current;
     current->flag = is_free;
@@ -245,7 +221,6 @@ void my_free(void* current_ptr) {
     join_free(current, current->next); 
     join_free(prev, current); 
 
-    //node = current;
     D printf("\n");
 }
 
