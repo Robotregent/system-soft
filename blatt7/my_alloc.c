@@ -8,23 +8,33 @@
 #else
  #define D if(0) 
 #endif
+
+/*
+    Realisierung nach dem Circular-First-Fit Prinzip. 
+    Orientiert an dem Beispiel aus der Vorlesung.  
+    Verwaltungseinheit hat neben dem next Zeiger einen Zeiger auf das benachtbarte Element.
+    Dieser Mechanismus wurde eingebaut, um einen Ring realisieren zu können auch wenn die 
+    Blöcke von get_block_from_system nicht nebeneinander liegen.
+    Folge: Großer Header und lange Suchzeiten. Buddy Verfahren wäre besser gewesen.
+
+    Kann mit Debug-Ausgaben gebaut werden.
+*/
     
 typedef enum { is_free, is_alloc } alloc_flag;    
 typedef struct header{
     size_t size;    
     struct header *next;
     struct header *succ; // zeigt auf die Fläche direkt rechts.
-    alloc_flag flag;
+    alloc_flag flag;     // header muss 16 Byte groß sein, daher können die 4 Byte padding auch als Flag genutzt werden
 } header;
 
 
-// Wurzelelement 
-header *root;
-// Aktuelles Element des Rings gemäß circular first fit
-header *node;
-header *min_address;
 
-typedef long align;
+header *root;           // Wurzelelement 
+header *node;           // Aktuelles Element des Rings gemäß circular first fit
+header *min_address;    // Ring aufteigend sortieren
+
+typedef long align;     
 
 
 void init_my_alloc() {
@@ -46,7 +56,9 @@ void init_my_alloc() {
     D printf("Node:\t %p\n",node);
     D printf("Min:\t %p\n",min_address);
 }
-extern inline header* append_new(header *new){
+
+// Fügt neuen Block in den Ring ein
+header* append_new(header *new){
     if (new > min_address){
         D printf("Nicht absteigend!\n");
         exit (1);
@@ -64,16 +76,10 @@ extern inline header* append_new(header *new){
     while(prev->succ != min_address){
         prev = prev->succ;
     }
-    D printf("min_address: %p prev: %p min_free: %p max_free: %p \n",min_address, prev,min_free,max_free);
-
-    D printf("\n");
 
     // Allgemeiner Ring
-    if (min_address->flag == is_alloc){
+    if (min_address->flag == is_alloc)
         min_address->next = new;
-        D printf("DO it \n");
-
-    }
     prev->succ = new;
     new->succ = min_address;
 
@@ -88,7 +94,8 @@ extern inline header* append_new(header *new){
     return max_free;
 }
 
-extern inline void trim_block(header *old, header *new, int size){
+// Verkleinert freie Speicherfläche
+void trim_block(header *old, header *new, int size){
     D printf("\nOld->size: %d size %d\n", old->size, size);
     new->next = old;
     new->succ = old->succ;
@@ -97,13 +104,12 @@ extern inline void trim_block(header *old, header *new, int size){
     old->succ = new;
     new->size = size;
     old->size -= size + sizeof(header);
-    new->flag = is_alloc;
-    
+    new->flag = is_alloc;    
 }
-extern inline void remove_from_free_ring(header *prev_free, header *current){
+
+// Entfernt Speicherfläche aus dem Ring freier Elemente
+void remove_from_free_ring(header *prev_free, header *current){
     header *prev;
- //   if (current->next==prev_free)
- //       exit (1);
     prev_free->next = current->next;
     if (prev_free <  current){
         prev = prev_free;
@@ -126,17 +132,14 @@ void* my_alloc(size_t size) {
     D printf("Size: %d\n",size);
     void *result=0;
     // Richtet angeforderte Größe auf durch 8 teilbare Gößen aus
-    // Sollte eigentlich laut Aufgabenstellung nicht notwendig sein
     if (size % sizeof(align))
         size += sizeof(align) - size % sizeof(align);
     
     header *prev = node;
     header *current = node->next;
 
-    //D printf("node: %p\n",node);
     // Suche ausreichend große freie Fläche
     do {
-        //D printf("Genug Platz? %p\n",current);
         if (current->size >= size)
             break;
         prev = current;
@@ -165,18 +168,18 @@ void* my_alloc(size_t size) {
     }
 
     if (current->size < size + 2 * sizeof(header)){
-        D printf("Ganzer Block weg ");
+        D printf("Ganzer Block ");
         if (current == node)                        
             node = root;
         else
             node = current->next;                   // circular first fit
         remove_from_free_ring(prev,current);        // Block aus dem Ring freier Flächen entfernen
         result = (void *) (current + 1);
-        D printf(" %p\n",current);
+        D printf(" %p weg.\n",current);
     }
     else {
-        D printf("Block %p verkleinern ",current);
-        node = current;               // ->next ist test:
+        D printf("Block %p verkleinern. Neu: ",current);
+        node = current;              
         header *new_header=(header *)((char *) current + current->size - size);
         trim_block(current,new_header,size);
         result = (void *) (new_header + 1);
@@ -185,7 +188,7 @@ void* my_alloc(size_t size) {
     D printf("\n");
     return result;
 }
-
+// Vereinigt benachtbarte Speicherflächen
 int join_free(header* prev, header* current){
     header *n = (header *)((char*) prev + sizeof(header) + prev->size);
     // Nicht nebeneinander oder das root Element
@@ -205,15 +208,10 @@ int join_free(header* prev, header* current){
 void my_free(void* current_ptr) {
     D printf("Free: %p, ptr %p\n",current_ptr-sizeof(header), current_ptr);
     header *current = (header *)((char *) current_ptr - sizeof(header));
-    if (current->flag == is_free){
-        D printf("Not Allocated\n\n");
-        exit(1);
-    }
     header *prev = current->next;
     while (prev->flag == is_alloc){
         prev = prev->next;
     }
-
     current->next = prev->next;
     prev->next = current;
     current->flag = is_free;
@@ -222,26 +220,4 @@ void my_free(void* current_ptr) {
     join_free(prev, current); 
 
     D printf("\n");
-}
-
-void print_ring(){
-    header *p;
-    char c;
-    if (node->flag == is_alloc)
-        c='U';
-    else
-        c='F';
-    printf("\n%p %c n:%p ->",node,c,node->next);
-    for (p=node->succ; p!=node; p=p->succ){
-        if (p->flag == is_alloc)
-            c='U';
-        else
-            c='F';
-        printf("%p %c n:%p ->",p,c,p->next);
-    }
-    if (p->flag == is_alloc)
-        c='U';
-    else
-        c='F';
-    printf("%p %c n:%p \n",p,c,p->next);
 }
