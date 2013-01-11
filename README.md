@@ -27,3 +27,11 @@ Einfacher Baum
 Blatt7
 ------
 Eigene dynamische Speicherverwaltung
+
+Blatt8
+------
+Simpler Mandelbrotgenerator
+
+Blatt9
+------
+Diff-ähnliche nwendung mit verschiedenen Filtern

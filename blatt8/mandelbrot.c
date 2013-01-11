@@ -117,30 +117,29 @@ void parse_args(int c,char **v){
         }
         switch (v++[0][1]){
             case 'l':
-                if (string_to_double(v[0],&d))
-                    left = d;
+                my_assert(string_to_double(v[0],&d),"Parsen der Argumente fehlgeschlagen.\nWert von -l muss vom Typ double sein.\n\0");
+                left = d;
                 break;
             case 't':
-                if (string_to_double(v[0],&d))
-                    top = d;
+                my_assert(string_to_double(v[0],&d),"Parsen der Argumente fehlgeschlagen.\nWert von -t muss vom Typ double sein.\n\0");
+                top = d;
                 break;
             case 'b':
-                if (string_to_double(v[0],&d))
-                    bottom = d;
+                my_assert(string_to_double(v[0],&d),"Parsen der Argumente fehlgeschlagen.\nWert von -b muss vom Typ double sein.\n\0");
+                bottom = d;
                 break;
             case 'r':
-                if (string_to_double(v[0],&d))
-                    right = d;
+                my_assert(string_to_double(v[0],&d),"Parsen der Argumente fehlgeschlagen.\nWert von -r muss vom Typ double sein.\n\0");
+                right = d;
                 break;
             case 'p':
-                if (string_to_int(v[0],&i))
-                    pixel = i;
+                my_assert(string_to_int(v[0],&i),"Parsen der Argumente fehlgeschlagen.\nWert von -p muss vom Typ int sein.\n\0");
+                pixel = i;
                 break;
             case 'i':
-                if (string_to_int(v[0],&i)){
-                    n = i;
-                    my_assert(n>0,"n muss größer 0 sein\n\0");
-                }
+                my_assert(string_to_int(v[0],&i),"Parsen der Argumente fehlgeschlagen.\nWert von -i muss vom Typ int sein.\n\0");
+                n = i;
+                my_assert(n>0,"n muss größer 0 sein\n\0");
                 break;
             case 'h':
             default:
