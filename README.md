@@ -34,4 +34,12 @@ Simpler Mandelbrotgenerator
 
 Blatt9
 ------
-Diff-ähnliche nwendung mit verschiedenen Filtern
+Diff-ähnliche Anwendung mit verschiedenen Filtern
+
+Blatt10
+-------
+Ahnentafel in Baumstruktur parsen
+
+Blatt11
+-------
+Verzeichnisse synchronisieren
