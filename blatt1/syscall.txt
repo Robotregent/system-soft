@@ -1,3 +1,0 @@
-                   c   python   java 
-Systemaufrufe   | 30 |   1019 | 4190 |
-write           |  1 |      1 |   10 |
