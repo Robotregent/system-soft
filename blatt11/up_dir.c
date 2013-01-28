@@ -19,10 +19,7 @@ static int dir_filter(const struct dirent *dir){
             && (self != 0) && (parent != 0))
         ret = 1;
 #else
-    struct stat s;
-    lstat(dir->d_name,&s);
-    if ((S_ISREG(s.st_mode)||S_ISDIR(s.st_mode))
-            && (self != 0) && (parent != 0))
+    if ((self != 0) && (parent != 0))
         ret = 1;
 #endif
     return ret;
@@ -45,18 +42,22 @@ void update_dir(const char * src_path, const char * dst_path, int rec_bucket, bo
         printf("ERROR: %s\n", strerror(errno));
         exit(2);
     }
+    struct stat stat_src, stat_dst;
 
     for (i=0,j=0; i<count_scr; i++){
+        path_src_file = create_path(src_path, src_list[i]->d_name);
+        lstat(path_src_file, &stat_src);
+#ifndef _DIRENT_HAVE_D_TYPE
+	    if (!(S_ISREG(stat_src.st_mode)||S_ISDIR(stat_src.st_mode)))
+	        break;
+#endif
         if (j+1 > count_dst)
             delta = -1;
         else
             delta = strcmp(src_list[i]->d_name, dst_list[j]->d_name);
 
         if (delta < 0){                         // src not in dst. copy
-            path_src_file = create_path(src_path, src_list[i]->d_name);
             path_dst_file = create_path(dst_path, src_list[i]->d_name);
-            struct stat stat_src;
-            lstat(path_src_file, &stat_src);
 
             if (S_ISREG(stat_src.st_mode)){ // copy file
                 copy_file(path_src_file, path_dst_file); 
@@ -78,14 +79,10 @@ void update_dir(const char * src_path, const char * dst_path, int rec_bucket, bo
         else if (delta > 0){
             j++;                                // dst not in src. skip
             i--;
-            path_src_file = 0;
             path_dst_file = 0;
         }
         else if (delta == 0){                   // src existiert in dst
-            path_src_file = create_path(src_path, src_list[i]->d_name);
             path_dst_file = create_path(dst_path, dst_list[j]->d_name);
-            struct stat stat_src, stat_dst;
-            lstat(path_src_file, &stat_src);
 
             if (S_ISDIR(stat_src.st_mode)){ // subfolder 
                 if (rec_bucket > 1)
