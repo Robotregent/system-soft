@@ -1,0 +1,3 @@
+; Imp
+here	MOV	here,next
+next

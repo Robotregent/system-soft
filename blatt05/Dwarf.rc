@@ -1,0 +1,6 @@
+;;; DWARF, as originally described by A.K. Dewdney.
+
+ptr	DAT	#0
+start	ADD	#5,ptr
+	MOV	#0,@ptr
+	JMP	start
